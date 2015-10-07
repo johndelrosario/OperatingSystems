@@ -1,0 +1,225 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Disk Scheduling Algorithms</title>
+    <script src="Scripts/jquery-2.1.4.js"></script>
+    <script src="Scripts/knockout-3.3.0.js"></script>
+    <script src="Scripts/jquery-1.9.1.min.js"></script>
+    <script src="Scripts/bootstrap.min.js"></script>
+    <script src="Scripts/app/main.js"></script>
+    <script src="Scripts/app/job.js"></script>
+    <script src="Scripts/app/algorithms.js"></script>
+    <script src="Scripts/app/algorithms/firstComeFirstServe.js"></script>
+    <script src="Scripts/app/algorithms/shortestJobFirst.js"></script>
+    <script src="Scripts/app/algorithms/priority.js"></script>
+    <script src="Scripts/app/algorithms/preemptivePriority.js"></script>
+    <link href="Content/bootstrap.min.css" rel="stylesheet" />
+
+    <style>
+        .borderless tbody tr td, .borderless tbody tr th, .borderless thead tr th {
+            border: none;
+        }
+
+        .btn-mini {
+            margin: 5px 10px;
+            width: 135px;
+        }
+    </style>
+</head>
+<body style="margin-top: 1%">
+    <div class="container">
+        <div class="row-fluid">
+            <div class="panel panel-default">
+            <div class="panel-heading">
+                <h1>
+                    <span class="glyphicon glyphicon-send"></span>
+                    <span>&nbsp;Scheduling Simulator</span></h1>
+            </div>
+            <div class="panel-body">
+                <div>
+                    <table class="table borderless">
+                        <tbody>
+                            <tr>
+                                <td style="width: 55%">
+                                    <div class="form-group">
+                                        <label>Algorithm</label>
+                                        <select class="form-control input-sm" data-bind="options: processScheduling.algorithms.collection,
+    optionsText: 'name',
+    optionsValue: 'id',
+    value: processScheduling.algorithms.selectedAlgorithm,
+    disable: processScheduling.algorithms.settings.isSimulationRunning(),
+    event: { change: processScheduling.algorithms.resetSimulation }"
+                                            style="width: 200px; display: inline-block;">
+                                        </select>
+                                    </div>
+                                </td>
+                                <td style="width: 35%">
+                                    <button class="btn btn-xs btn-mini btn-default" data-bind="click: processScheduling.algorithms.invokeStep,
+    visible: !processScheduling.algorithms.counters.hasFinished() &&
+    !processScheduling.algorithms.settings.isSimulationRunning()">
+                                        <span class="glyphicon glyphicon-play-circle"></span>
+                                        &nbsp;Step
+                                    </button>
+                                    <button class="btn btn-xs btn-mini btn-primary" data-bind="click: processScheduling.algorithms.simulate,
+    visible: !processScheduling.algorithms.counters.hasFinished() &&
+    !processScheduling.algorithms.settings.isSimulationRunning()">
+                                        <span class="glyphicon glyphicon-play"></span>
+                                        &nbsp;Simulate
+                                    </button>
+                                    
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <label>Simulation Interval</label>
+                                    <select class="form-control input-sm" data-bind="value: processScheduling.algorithms.settings.simulationInterval,
+    disable: processScheduling.algorithms.settings.isSimulationRunning()"
+                                            style="width: 200px; display: inline-block;">
+                                            <option value="0">Instant</option>
+                                            <option value="500">.5 seconds</option>
+                                            <option value="750">.75 second</option>
+                                            <option value="1000">1 second</option>
+                                        </select></td>
+                                <td>
+                                    <button class="btn btn-xs btn-mini btn-success" data-bind="click: processScheduling.algorithms.pauseSimulation,
+    visible: !processScheduling.algorithms.counters.hasFinished() &&
+    processScheduling.algorithms.settings.isSimulationRunning()">
+                                        <span class="glyphicon glyphicon-pause"></span>
+                                        &nbsp;Pause Simulation
+                                    </button>
+                                    <button class="btn btn-xs btn-mini btn-danger" data-bind="click: processScheduling.algorithms.resetSimulation,
+    visible: processScheduling.algorithms.settings.hasStarted()">
+                                        <span class="glyphicon glyphicon-repeat"></span>
+                                        Reset Simulation
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+
+                    <table class="table table-hover table-condensed">
+                        <thead>
+                            <tr>
+                                <th style="width: 5%">Job</th>
+                                <th style="width: 10%">CPU Burst</th>
+                                <th style="width: 10%">Arrival Time</th>
+                                <th data-bind="visible: processScheduling.algorithms.selectedAlgorithm() == 2 || processScheduling.algorithms.selectedAlgorithm() == 3" style="width: 10%">Priority</th>
+                                <th style="width: 10%">Waiting Time</th>
+                                <th style="width: 10%">Turn Around Time</th>
+                                <th style="width: 1%">
+                                    <button class="btn btn-xs btn-success" data-bind="click: function () { processScheduling.jobs.addJob() },
+    visible: !processScheduling.algorithms.settings.hasStarted()">
+                                        <span class="glyphicon glyphicon-plus"></span>
+                                    </button>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody data-bind="foreach: processScheduling.jobs.jobCollection">
+                            <tr data-bind="style: { 'background-color': nextToQueue() ? '#FA528A' : (inQueue() ? '#4A72E8' : '') }">
+                                <td style="vertical-align: middle">
+                                    <b data-bind="text: id" />
+                                </td>
+                                <td>
+                                    <input class="input-sm" data-bind="value: cpuBurst,
+    disable: processScheduling.algorithms.settings.hasStarted()" style="width: 50px;" />
+                                </td>
+                                <td>
+                                    <input class="input-sm" data-bind="value: queueArrival,
+    disable: processScheduling.algorithms.settings.hasStarted()" style="width: 50px;" />
+                                </td>
+                                <td data-bind="visible: processScheduling.algorithms.selectedAlgorithm() == 2 || processScheduling.algorithms.selectedAlgorithm() == 3">
+                                    <input class="input-sm" data-bind="value: priority,
+    disable: processScheduling.algorithms.settings.hasStarted()" style="width: 50px;" />
+                                </td>
+                                <td data-bind="text: waitingTime"></td>
+                                <td data-bind="text: turnAroundTime"></td>
+                                <td>
+                                    <button class="btn btn-xs btn-danger"
+                                        data-bind="click: processScheduling.jobs.removeJob,
+    visible: (id() != 0 || processScheduling.jobs.jobCollection().length != 1) &&
+    !processScheduling.algorithms.settings.hasStarted()">
+                                        <span class="glyphicon glyphicon-remove"></span>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div>
+                        <h2 class="well well-sm">
+                            <span class="glyphicon glyphicon-list"></span>
+                            <span>&nbsp;Gantt Chart</span>
+                        </h2>
+                        <div style="overflow-x: auto;">
+                            <!-- ko if: processScheduling.jobs.processedCollection().length > 0  -->
+                            <div data-bind="foreach: processScheduling.jobs.processedCollection">
+                                <div class="" style="display: table-cell; width: 20px; height: 50px; vertical-align: middle; text-align: center;"
+                                    data-bind="text: $data == 'NA' ? 'N/A' : id,
+    style: { 'background-color': $data == 'NA' ? '#FA528A' : color, 'font-size': $data == 'NA' ? '10px' : '' }">
+                                </div>
+                            </div>
+                            <div data-bind="foreach: processScheduling.jobs.processedCollection">
+                                <div class="" style="display: table-cell; width: 20px; height: 50px; vertical-align: middle; text-align: center; font-size: 10px; background-color: lightgray;"
+                                    data-bind="text: ko.utils.unwrapObservable($index) + 1">
+                                </div>
+                            </div>
+
+                            <!-- /ko -->
+                            <!-- ko if: processScheduling.jobs.processedCollection().length === 0 -->
+                            <div class="well well-sm">
+                                <div style="text-align: center; width: 100%; font-style: italic;">No jobs have been processed.</div>
+                                <!--<div class="disabled" style="width: 100%; height: 50px; text-align: center; background-color: lightgray; padding-top: 15px;">-->
+                                    <!--<i>No jobs have been processed</i>-->
+                                <!--</div>-->
+                            </div>
+                            <!-- /ko-->
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="well well-sm">
+                            <span class="glyphicon glyphicon-tasks"></span>
+                            <span>&nbsp;Summary</span>
+                        </h2>
+                        <table class="table table-hover table-condensed">
+                            <thead>
+                                <tr>
+                                    <th>CPU Enter Count</th>
+                                    <th>Waiting Time Ave</th>
+                                    <th>Turn Around Time Ave</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td data-bind="text: processScheduling.algorithms.processCounter"></td>
+                                    <td data-bind="text: processScheduling.algorithms.waitingTimeCounter"></td>
+                                    <td data-bind="text: processScheduling.algorithms.turnAroundCounter"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+    <script>
+        // SJF / PRIO
+        processScheduling.jobs.addJob(9, 2, 5);
+        processScheduling.jobs.addJob(6, 18, 2);
+        processScheduling.jobs.addJob(10, 7, 3);
+        processScheduling.jobs.addJob(7, 4, 6);
+        processScheduling.jobs.addJob(4, 5, 1);
+        processScheduling.jobs.addJob(8, 0, 4);
+        processScheduling.jobs.addJob(5, 20, 2);
+        // FCFS
+        //processScheduling.jobs.addJob(15, 0, 4);
+        //processScheduling.jobs.addJob(6, 5, 3);
+        //processScheduling.jobs.addJob(6, 6, 2);
+        //processScheduling.jobs.addJob(6, 8, 1);
+        ko.applyBindings();
+    </script>
+</body>
+</html>
+
